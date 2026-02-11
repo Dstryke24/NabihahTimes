@@ -556,10 +556,24 @@ function renderGrid(){
         inp.addEventListener("focus", ()=> selectCell(r,c,STATE.selected.dir, true));
         inp.addEventListener("keydown", (e)=> onKey(e, r, c));
         inp.addEventListener("input", ()=> {
-          inp.value = (inp.value || "").toUpperCase().replace(/[^A-Z]/g,"");
-          moveNext();
-          checkWin(true);
-        });
+  inp.value = (inp.value || "").toUpperCase().replace(/[^A-Z]/g,"");
+
+  // SMART: remove red slash only if the new letter is correct
+  const typed = inp.value.toUpperCase();
+  const correct = STATE.solution[r][c];
+
+  if(typed && typed === correct){
+    cellEl.classList.remove("wrong");
+    cellEl.classList.add("correct");
+  } else {
+    cellEl.classList.remove("correct");
+    // don't remove "wrong" here — it will stay until correct
+  }
+
+  moveNext();
+  checkWin(true);
+});
+
 
         cellEl.appendChild(inp);
 
@@ -887,10 +901,39 @@ document.getElementById("modalBackdrop").addEventListener("click", (e)=>{ if(e.t
 window.addEventListener("resize", ()=>{ updateCellSize(); });
 
 // Start
+function closeIntroModal(){
+  document.getElementById("introBackdrop").style.display = "none";
+}
+
+document.getElementById("startBtn").addEventListener("click", closeIntroModal);
+document.getElementById("introBackdrop").addEventListener("click", (e)=>{
+  if(e.target.id === "introBackdrop") closeIntroModal();
+});
+
 buildFromFixed();
 </script>
+<!-- INTRO MODAL (shows on page load) -->
+<div id="introBackdrop" class="modalBackdrop" role="dialog" aria-modal="true" style="display:flex;">
+  <div class="modal">
+    <h3 style="margin-top:4px;">Hey Jaan!</h3>
+
+    <p style="font-size:15px; line-height:1.6; margin-top:10px;">
+      There are so many things I want to ask you but never get to it. I thought, with the 6 month anniversary of ours approaching soon, there is one question that I can ask.
+    </p>
+
+    <p style="font-size:15px; line-height:1.6;">
+      Anyways, I'm getting ahead of myself. Let's start with remembering our 6 months with each other. The question can wait till after.
+    </p>
+
+    <div class="row" style="margin-top:16px;">
+      <button id="startBtn" class="primary">Start</button>
+    </div>
+  </div>
+</div>
+  
 </body>
 </html>
+
 
 
 
