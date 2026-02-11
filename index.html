@@ -894,24 +894,6 @@ document.getElementById("questionBackdrop").addEventListener("click", (e)=>{
   if(e.target.id === "questionBackdrop") closeQuestionModal();
 });
 
-
-document.getElementById("closeBtn").addEventListener("click", closeModal);
-document.getElementById("modalBackdrop").addEventListener("click", (e)=>{ if(e.target.id==="modalBackdrop") closeModal(); });
-
-window.addEventListener("resize", ()=>{ updateCellSize(); });
-
-// Start
-function closeIntroModal(){
-  document.getElementById("introBackdrop").style.display = "none";
-}
-
-document.getElementById("startBtn").addEventListener("click", closeIntroModal);
-document.getElementById("introBackdrop").addEventListener("click", (e)=>{
-  if(e.target.id === "introBackdrop") closeIntroModal();
-});
-
-buildFromFixed();
-
 <!-- INTRO MODAL (shows on page load) -->
 <div id="introBackdrop" class="modalBackdrop" role="dialog" aria-modal="true" style="display:flex;">
   <div class="modal">
@@ -930,11 +912,30 @@ buildFromFixed();
     </div>
   </div>
 </div>
+document.getElementById("closeBtn").addEventListener("click", closeModal);
+document.getElementById("modalBackdrop").addEventListener("click", (e)=>{ if(e.target.id==="modalBackdrop") closeModal(); });
+
+window.addEventListener("resize", ()=>{ updateCellSize(); });
+
+// Start
+function closeIntroModal(){
+  document.getElementById("introBackdrop").style.display = "none";
+}
+
+document.getElementById("startBtn").addEventListener("click", closeIntroModal);
+document.getElementById("introBackdrop").addEventListener("click", (e)=>{
+  if(e.target.id === "introBackdrop") closeIntroModal();
+});
+
+buildFromFixed();
+
+
 </script>
 
   
 </body>
 </html>
+
 
 
 
