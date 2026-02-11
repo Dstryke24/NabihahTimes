@@ -6,25 +6,73 @@
   <title>Mini Valentine Crossword</title>
   <style>
     :root { --cell: 42px; --gap: 2px; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background:#fafafa; color:#111; }
+
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      margin: 0;
+      background:#fafafa;
+      color:#111;
+      overflow-x: hidden;
+    }
+
     header { padding: 18px 16px 10px; max-width: 1100px; margin: 0 auto; }
     h1 { margin: 0; font-size: 20px; letter-spacing: .2px; }
     .sub { margin-top: 6px; color:#444; font-size: 13px; line-height: 1.35; }
-    .wrap { display: grid; grid-template-columns: 1fr 360px; gap: 18px; max-width: 1100px; margin: 0 auto; padding: 0 16px 18px; }
-    @media (max-width: 980px){ .wrap{ grid-template-columns: 1fr; } }
+    .footerNote { font-size: 12px; color:#666; margin-top: 10px; }
 
-    .card { background:#fff; border: 1px solid #e7e7e7; border-radius: 14px; box-shadow: 0 6px 18px rgba(0,0,0,.06); }
-    .gridCard { padding: 14px; }
-    .tools { display:flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
-    button{
-      border:1px solid #ddd; background:#fff; padding: 9px 10px; border-radius: 10px;
-      cursor:pointer; font-weight:600; font-size: 13px;
+    .wrap {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 18px;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 16px 18px;
+      align-items: start;
     }
-    button:hover{ background:#f3f3f3; }
-    button.primary{ background:#111; color:#fff; border-color:#111; }
-    button.primary:hover{ background:#222; }
-    button.danger{ border-color:#f0c3c3; }
-    .status { margin-top: 10px; font-size: 13px; color:#333; }
+
+    @media (max-width: 980px){
+      .wrap{ grid-template-columns: 1fr; gap: 12px; }
+    }
+
+    .card {
+      background:#fff;
+      border: 1px solid #e7e7e7;
+      border-radius: 14px;
+      box-shadow: 0 6px 18px rgba(0,0,0,.06);
+    }
+    .gridCard { padding: 14px; }
+    .cluesCard { padding: 14px; }
+
+    /* Current clue bar (helps mobile a LOT) */
+    .clueBar {
+      display:flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid #eee;
+      background:#fcfcfc;
+      padding: 10px 12px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+    .clueBar .left { min-width: 0; }
+    .clueBar .label { font-size: 12px; color:#666; font-weight: 800; letter-spacing:.3px; text-transform: uppercase; }
+    .clueBar .text { margin-top: 4px; font-size: 13px; color:#111; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .clueBar .pill {
+      font-size: 12px; color:#444; font-weight: 800;
+      padding: 5px 10px;
+      border: 1px solid #e6e6e6;
+      border-radius: 999px;
+      background:#fff;
+      flex: 0 0 auto;
+    }
+
+    .gridWrap {
+      /* makes grid scrollable if needed, but we will size it to fit on mobile */
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 12px;
+    }
 
     .grid {
       display: grid;
@@ -36,8 +84,8 @@
       border-radius: 12px;
       width: fit-content;
       max-width: 100%;
-      overflow:auto;
     }
+
     .cell {
       width: var(--cell);
       height: var(--cell);
@@ -45,29 +93,43 @@
       position: relative;
     }
     .cell.black { background:#111; }
+
     .num {
       position:absolute; top: 3px; left: 4px;
-      font-size: 10px; color:#111; opacity:.7; font-weight:700;
+      font-size: 10px; color:#111; opacity:.7; font-weight:800;
       pointer-events:none;
     }
+
     input.letter {
       width: 100%; height: 100%;
       border: 0; outline: none;
       text-transform: uppercase;
       text-align: center;
-      font-size: 20px;
-      font-weight: 700;
+      font-size: 18px;           /* >=16 prevents iOS auto zoom */
+      font-weight: 800;
       background: transparent;
       caret-color: transparent;
+      padding: 0;
     }
+
     .cell.selected { outline: 3px solid #111; outline-offset: -3px; }
     .cell.highlight { background: #fff7cc; }
     .cell.wrong input { color:#b00020; }
     .cell.correct input { color:#111; }
 
-    .cluesCard { padding: 14px; }
+    .tools { display:flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; }
+    button{
+      border:1px solid #ddd; background:#fff; padding: 9px 10px; border-radius: 10px;
+      cursor:pointer; font-weight:700; font-size: 13px;
+    }
+    button:hover{ background:#f3f3f3; }
+    button.primary{ background:#111; color:#fff; border-color:#111; }
+    button.primary:hover{ background:#222; }
+    button.danger{ border-color:#f0c3c3; }
+    .status { margin-top: 10px; font-size: 13px; color:#333; }
+
+    /* Clues */
     .clueCols { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    @media (max-width: 980px){ .clueCols{ grid-template-columns: 1fr; } }
     h2 { font-size: 14px; margin: 0 0 8px; letter-spacing:.2px; }
 
     /* No bullets */
@@ -84,8 +146,27 @@
     }
     li:hover { background:#f5f5f5; }
     li.active { background: #fff7cc; }
-    li span.answerLen { color:#777; font-weight:600; margin-left: 6px; font-size: 12px; }
+    li span.answerLen { color:#777; font-weight:700; margin-left: 6px; font-size: 12px; }
 
+    /* Mobile clue tabs */
+    .tabs {
+      display: none;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .tabBtn { flex: 1; }
+    .tabBtn.active { background:#111; border-color:#111; color:#fff; }
+
+    @media (max-width: 980px){
+      /* on mobile: clues become tabs, not two columns */
+      .clueCols { grid-template-columns: 1fr; }
+      .tabs { display: flex; }
+      .clueCols > div { display: none; }
+      .clueCols > div.activePanel { display: block; }
+      .clueBar .text { white-space: normal; overflow: visible; text-overflow: clip; } /* show full clue on mobile */
+    }
+
+    /* Modal */
     .modalBackdrop {
       position: fixed; inset: 0; background: rgba(0,0,0,.55);
       display:none; align-items: center; justify-content: center; padding: 18px;
@@ -94,8 +175,7 @@
     .modal h3 { margin: 0 0 6px; font-size: 18px; }
     .modal p { margin: 0 0 12px; color:#333; line-height: 1.35; }
     .modal .row { display:flex; gap: 10px; flex-wrap: wrap; }
-    .pill { display:inline-block; padding: 3px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #e6e6e6; color:#444; background:#fafafa; }
-    .footerNote { font-size: 12px; color:#666; margin-top: 10px; }
+    .pillSmall { display:inline-block; padding: 3px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #e6e6e6; color:#444; background:#fafafa; }
   </style>
 </head>
 <body>
@@ -103,13 +183,24 @@
     <h1>Mini Valentine Crossword</h1>
     <div class="sub">
       Solve the crossword. When you finish… there’s a question waiting. 💌
-      <div class="footerNote">Tip: click a square, type letters. Use arrows / backspace. Click again to switch Across/Down.</div>
+      <div class="footerNote">Tip: tap a square, type letters. Use arrows / backspace. Tap same square again to switch Across/Down.</div>
     </div>
   </header>
 
   <main class="wrap">
     <section class="card gridCard">
-      <div id="grid" class="grid" aria-label="crossword grid"></div>
+      <div class="clueBar">
+        <div class="left">
+          <div class="label">Current clue</div>
+          <div id="currentClue" class="text">Tap a square to begin.</div>
+        </div>
+        <div id="currentDir" class="pill">Across</div>
+      </div>
+
+      <div class="gridWrap">
+        <div id="grid" class="grid" aria-label="crossword grid"></div>
+      </div>
+
       <div class="tools">
         <button id="checkBtn" class="primary">Check</button>
         <button id="clearBtn" class="danger">Clear</button>
@@ -118,12 +209,17 @@
     </section>
 
     <aside class="card cluesCard">
+      <div class="tabs">
+        <button id="acrossTab" class="tabBtn active">Across</button>
+        <button id="downTab" class="tabBtn">Down</button>
+      </div>
+
       <div class="clueCols">
-        <div>
+        <div id="acrossPanel" class="activePanel">
           <h2>Across</h2>
           <ul id="across"></ul>
         </div>
-        <div>
+        <div id="downPanel">
           <h2>Down</h2>
           <ul id="down"></ul>
         </div>
@@ -133,7 +229,7 @@
 
   <div id="modalBackdrop" class="modalBackdrop" role="dialog" aria-modal="true">
     <div class="modal">
-      <div class="pill">Solved ✅</div>
+      <div class="pillSmall">Solved ✅</div>
       <h3 id="modalTitle">Will you be my Valentine?</h3>
       <p id="modalText">I made this from our clues, our memories, and (a little) code. 💗</p>
       <div class="row">
@@ -145,9 +241,8 @@
 
 <script>
 /**
- * FIXED GRID (uses ALL 20 words, and is fully connected)
- * # = black square
- * Letters = solution
+ * FIXED GRID (all 20 words; connected)
+ * # = black
  */
 const FIXED_GRID = [
   "####################",
@@ -194,14 +289,54 @@ let STATE = null;
 function setStatus(msg){ document.getElementById("status").textContent = msg; }
 function getCellEl(r,c){ return document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`); }
 
+function escapeHtml(s){
+  return (s||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function isMobile(){
+  return window.matchMedia("(max-width: 980px)").matches;
+}
+
+function setTab(dir){
+  const acrossTab = document.getElementById("acrossTab");
+  const downTab   = document.getElementById("downTab");
+  const acrossPanel = document.getElementById("acrossPanel");
+  const downPanel   = document.getElementById("downPanel");
+
+  const isAcross = dir === "across";
+  acrossTab.classList.toggle("active", isAcross);
+  downTab.classList.toggle("active", !isAcross);
+
+  acrossPanel.classList.toggle("activePanel", isAcross);
+  downPanel.classList.toggle("activePanel", !isAcross);
+}
+
+function updateCellSize(){
+  // Desktop keeps ~42. Mobile computes cell size so grid fits nicely.
+  const cols = STATE?.cols ?? FIXED_GRID[0].length;
+  const gap = 2;
+
+  if(!isMobile()){
+    document.documentElement.style.setProperty("--cell", "42px");
+    return;
+  }
+
+  const sidePadding = 16 * 2;   // page padding
+  const cardPadding = 14 * 2;   // gridCard padding
+  const available = Math.max(280, Math.min(window.innerWidth - sidePadding - cardPadding, 620));
+  const cell = Math.floor((available - (cols + 1) * gap) / cols);
+
+  const clamped = Math.max(28, Math.min(cell, 46));
+  document.documentElement.style.setProperty("--cell", clamped + "px");
+}
+
 function buildFromFixed(){
   const grid = FIXED_GRID.map(row => row.split("").map(ch => ch === "#" ? null : ch));
   const rows = grid.length;
   const cols = grid[0].length;
-
   const isBlack = (r,c)=> grid[r][c] === null;
 
-  // numbering like NYT (starts of across/down)
+  // numbering like NYT
   const numbers = Array.from({length:rows}, ()=> Array.from({length:cols}, ()=> 0));
   let num = 1;
   for(let r=0;r<rows;r++){
@@ -213,7 +348,6 @@ function buildFromFixed(){
     }
   }
 
-  // extract across/down entries from the fixed grid
   const acrossList = [];
   const downList = [];
 
@@ -255,11 +389,12 @@ function buildFromFixed(){
     selected: { r:0, c:0, dir:"across" }
   };
 
+  updateCellSize();
   renderGrid();
   renderClues();
   setStatus("Ready. 💌");
 
-  // select first non-black
+  // first non-black
   outer: for(let r=0;r<rows;r++){
     for(let c=0;c<cols;c++){
       if(STATE.solution[r][c]!==null){
@@ -350,10 +485,6 @@ function renderClues(){
   }
 }
 
-function escapeHtml(s){
-  return (s||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
-
 function getWordStart(r,c,dir){
   const { solution } = STATE;
   if(solution[r][c]===null) return {r,c};
@@ -363,6 +494,26 @@ function getWordStart(r,c,dir){
   } else {
     while(r>0 && solution[r-1][c]!==null) r--;
     return {r,c};
+  }
+}
+
+function updateClueBar(){
+  const { r, c, dir } = STATE.selected;
+  const start = getWordStart(r,c,dir);
+  const num = STATE.numbers[start.r][start.c];
+
+  document.getElementById("currentDir").textContent = dir === "across" ? "Across" : "Down";
+
+  const listId = dir === "across" ? "across" : "down";
+  const listEl = document.getElementById(listId);
+  const target = listEl.querySelector(`li[data-dir="${dir}"][data-number="${num}"]`);
+
+  if(target){
+    // remove the number/length from clue bar: show just the clue text
+    const clueText = target.textContent.replace(/^\s*\d+\.\s*/, "").replace(/\(\d+\)\s*$/, "").trim();
+    document.getElementById("currentClue").textContent = clueText;
+  } else {
+    document.getElementById("currentClue").textContent = "Tap a square to begin.";
   }
 }
 
@@ -380,6 +531,11 @@ function updateActiveClue(){
     target.classList.add("active");
     target.scrollIntoView({ block: "nearest" });
   }
+
+  // On mobile, automatically switch to the right clue tab
+  if(isMobile()) setTab(dir);
+
+  updateClueBar();
 }
 
 function selectCell(r,c,dir, focusInput=false){
@@ -559,6 +715,9 @@ function closeModal(){ document.getElementById("modalBackdrop").style.display = 
 document.getElementById("checkBtn").addEventListener("click", ()=>check(true));
 document.getElementById("clearBtn").addEventListener("click", clearAll);
 
+document.getElementById("acrossTab").addEventListener("click", ()=> setTab("across"));
+document.getElementById("downTab").addEventListener("click", ()=> setTab("down"));
+
 document.getElementById("closeBtn").addEventListener("click", closeModal);
 document.getElementById("modalBackdrop").addEventListener("click", (e)=>{ if(e.target.id==="modalBackdrop") closeModal(); });
 
@@ -567,6 +726,12 @@ document.getElementById("yesBtn").addEventListener("click", ()=>{
   document.getElementById("modalText").textContent = "Happy Valentine’s — I choose you, always. 🥹❤️";
 });
 
+// Recompute cell size on rotate/resize
+window.addEventListener("resize", ()=>{
+  updateCellSize();
+});
+
+// Start
 buildFromFixed();
 </script>
 </body>
