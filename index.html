@@ -1,0 +1,752 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mini Valentine Crossword</title>
+  <style>
+    :root { --cell: 42px; --gap: 2px; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background:#fafafa; color:#111; }
+    header { padding: 18px 16px 10px; max-width: 1100px; margin: 0 auto; }
+    h1 { margin: 0; font-size: 20px; letter-spacing: .2px; }
+    .sub { margin-top: 6px; color:#444; font-size: 13px; line-height: 1.35; }
+    .wrap { display: grid; grid-template-columns: 1fr 360px; gap: 18px; max-width: 1100px; margin: 0 auto; padding: 0 16px 18px; }
+    @media (max-width: 980px){ .wrap{ grid-template-columns: 1fr; } }
+
+    .card { background:#fff; border: 1px solid #e7e7e7; border-radius: 14px; box-shadow: 0 6px 18px rgba(0,0,0,.06); }
+    .gridCard { padding: 14px; }
+    .tools { display:flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
+    button{
+      border:1px solid #ddd; background:#fff; padding: 9px 10px; border-radius: 10px;
+      cursor:pointer; font-weight:600; font-size: 13px;
+    }
+    button:hover{ background:#f3f3f3; }
+    button.primary{ background:#111; color:#fff; border-color:#111; }
+    button.primary:hover{ background:#222; }
+    button.danger{ border-color:#f0c3c3; }
+    .status { margin-top: 10px; font-size: 13px; color:#333; }
+
+    .grid {
+      display: grid;
+      gap: var(--gap);
+      justify-content: start;
+      align-content: start;
+      background:#111;
+      padding: var(--gap);
+      border-radius: 12px;
+      width: fit-content;
+      max-width: 100%;
+      overflow:auto;
+    }
+    .cell {
+      width: var(--cell);
+      height: var(--cell);
+      background:#fff;
+      position: relative;
+    }
+    .cell.black { background:#111; }
+    .num {
+      position:absolute; top: 3px; left: 4px;
+      font-size: 10px; color:#111; opacity:.7; font-weight:700;
+      pointer-events:none;
+    }
+    input.letter {
+      width: 100%; height: 100%;
+      border: 0; outline: none;
+      text-transform: uppercase;
+      text-align: center;
+      font-size: 20px;
+      font-weight: 700;
+      background: transparent;
+      caret-color: transparent;
+    }
+    .cell.selected { outline: 3px solid #111; outline-offset: -3px; }
+    .cell.highlight { background: #fff7cc; }
+    .cell.wrong input { color:#b00020; }
+    .cell.correct input { color:#111; }
+
+    .cluesCard { padding: 14px; }
+    .clueCols { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    @media (max-width: 980px){ .clueCols{ grid-template-columns: 1fr; } }
+    h2 { font-size: 14px; margin: 0 0 8px; letter-spacing:.2px; }
+    ol { margin: 0; padding-left: 18px; }
+    li { margin: 6px 0; font-size: 13px; color:#222; line-height: 1.25; }
+    li span.answerLen { color:#777; font-weight:600; margin-left: 6px; font-size: 12px; }
+
+    .modalBackdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,.55);
+      display:none; align-items: center; justify-content: center; padding: 18px;
+    }
+    .modal { max-width: 520px; width: 100%; padding: 18px; border-radius: 16px; background:#fff; border:1px solid #eee; }
+    .modal h3 { margin: 0 0 6px; font-size: 18px; }
+    .modal p { margin: 0 0 12px; color:#333; line-height: 1.35; }
+    .modal .row { display:flex; gap: 10px; flex-wrap: wrap; }
+    .pill { display:inline-block; padding: 3px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #e6e6e6; color:#444; background:#fafafa; }
+    .footerNote { font-size: 12px; color:#666; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Mini Valentine Crossword</h1>
+    <div class="sub">
+      Solve the crossword. When you finish… there’s a question waiting. 💌
+      <div class="footerNote">Tip: click a square, type letters. Use arrows / backspace. Click again to switch Across/Down.</div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="card gridCard">
+      <div id="grid" class="grid" aria-label="crossword grid"></div>
+      <div class="tools">
+        <button id="hintBtn" class="primary">Hint (reveal 1 letter)</button>
+        <button id="checkBtn">Check</button>
+        <button id="clearBtn" class="danger">Clear</button>
+        <button id="newBtn">Regenerate Grid</button>
+      </div>
+      <div id="status" class="status"></div>
+    </section>
+
+    <aside class="card cluesCard">
+      <div class="clueCols">
+        <div>
+          <h2>Across</h2>
+          <ol id="across"></ol>
+        </div>
+        <div>
+          <h2>Down</h2>
+          <ol id="down"></ol>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <div id="modalBackdrop" class="modalBackdrop" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="pill">Solved ✅</div>
+      <h3 id="modalTitle">Will you be my Valentine?</h3>
+      <p id="modalText">I made this from our clues, our memories, and (a little) code. 💗</p>
+      <div class="row">
+        <button id="yesBtn" class="primary">Yes 💘</button>
+        <button id="closeBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+/**
+ * === Your entries ===
+ * Keep ANSWER as A–Z only, uppercase, no spaces.
+ * Clue text can be anything.
+ */
+const ENTRIES = [
+  { answer: "KHALJI", clue: "He is big, he is powerful, sometimes causes delays and for some reason intimidates your brother." },
+  { answer: "LETSGO", clue: "Not quite on a knee, but an invite to forever." },
+  { answer: "PANDORA", clue: "A gift from my travel, never adorned." },
+  { answer: "LAPELPIN", clue: "Safi stands with UAE." },
+  { answer: "VEIL", clue: "A part of your shaadi garment, I never got to see." },
+  { answer: "LOCHNESS", clue: "Drenched pants, cold fingers and 3 rainbows later, never found." },
+  { answer: "LIZ", clue: "Cat lady gardner of Oxfordshire." },
+  { answer: "CLYDE", clue: "Moody's furry scottish brother." },
+  { answer: "MATCHA", clue: "A green slap to the face I only tolerate during the day." },
+  { answer: "ZAM", clue: "Your local comfort food joint." },
+  { answer: "NONE", clue: "My favourite cheesecake topping." },
+  { answer: "SHEIN", clue: "The order never placed." },
+  { answer: "ITTA", clue: "How much do you love me?" },
+  { answer: "IMAD", clue: "The legend. The greatest. The hottest. The man that makes all men want to be him." },
+  { answer: "NBH", clue: 'The "sweet" man of Malaz.' },
+  { answer: "STORR", clue: "The old man that made you cry." },
+  { answer: "PHOTOS", clue: "We will get to it someday..." },
+  { answer: "FOYER", clue: "Our next home improvement project (Inshallah)." },
+];
+
+// ---- Crossword layout generator (greedy with retries) ----
+function makeGrid(size){
+  const g = Array.from({length:size}, () => Array.from({length:size}, () => null));
+  return g;
+}
+function inBounds(g, r, c){ return r>=0 && c>=0 && r<g.length && c<g.length; }
+function cell(g,r,c){ return inBounds(g,r,c) ? g[r][c] : undefined; }
+
+function canPlace(g, word, r, c, dir){
+  // dir: "across" or "down"
+  const dr = dir==="down" ? 1 : 0;
+  const dc = dir==="across" ? 1 : 0;
+
+  // must be in bounds
+  const endR = r + dr*(word.length-1);
+  const endC = c + dc*(word.length-1);
+  if(!inBounds(g, r, c) || !inBounds(g, endR, endC)) return false;
+
+  // boundary cells before and after must be empty (classic crossword rule)
+  const before = cell(g, r - dr, c - dc);
+  const after  = cell(g, endR + dr, endC + dc);
+  if(before !== null && before !== undefined) return false;
+  if(after  !== null && after  !== undefined) return false;
+
+  // each letter must match or be empty; adjacent perpendicular cells must be empty unless crossing
+  for(let i=0;i<word.length;i++){
+    const rr = r + dr*i;
+    const cc = c + dc*i;
+    const existing = g[rr][cc];
+    if(existing !== null && existing !== word[i]) return false;
+
+    // perpendicular adjacency checks
+    if(dir==="across"){
+      const up = cell(g, rr-1, cc);
+      const dn = cell(g, rr+1, cc);
+      const isCrossing = existing === word[i];
+      // if not crossing, up/down should be empty
+      if(!isCrossing){
+        if(up !== null && up !== undefined) return false;
+        if(dn !== null && dn !== undefined) return false;
+      }
+    } else {
+      const lf = cell(g, rr, cc-1);
+      const rt = cell(g, rr, cc+1);
+      const isCrossing = existing === word[i];
+      if(!isCrossing){
+        if(lf !== null && lf !== undefined) return false;
+        if(rt !== null && rt !== undefined) return false;
+      }
+    }
+  }
+  return true;
+}
+
+function placeWord(g, word, r, c, dir){
+  const dr = dir==="down" ? 1 : 0;
+  const dc = dir==="across" ? 1 : 0;
+  for(let i=0;i<word.length;i++){
+    g[r+dr*i][c+dc*i] = word[i];
+  }
+}
+
+function findPossiblePlacements(g, placed, word){
+  // Try to cross each letter with existing letters in grid
+  const placements = [];
+  const size = g.length;
+
+  // Collect all coordinates for each letter in grid
+  const coordsByLetter = new Map();
+  for(let r=0;r<size;r++){
+    for(let c=0;c<size;c++){
+      const ch = g[r][c];
+      if(ch){
+        if(!coordsByLetter.has(ch)) coordsByLetter.set(ch, []);
+        coordsByLetter.get(ch).push([r,c]);
+      }
+    }
+  }
+
+  for(let i=0;i<word.length;i++){
+    const ch = word[i];
+    const coords = coordsByLetter.get(ch);
+    if(!coords) continue;
+    for(const [r,c] of coords){
+      // If we cross at (r,c), compute start positions
+      // across: start at col = c - i
+      const ra = r;
+      const ca = c - i;
+      if(canPlace(g, word, ra, ca, "across")) placements.push({r:ra,c:ca,dir:"across",score:scorePlacement(g, word, ra, ca, "across")});
+      // down: start at row = r - i
+      const rd = r - i;
+      const cd = c;
+      if(canPlace(g, word, rd, cd, "down")) placements.push({r:rd,c:cd,dir:"down",score:scorePlacement(g, word, rd, cd, "down")});
+    }
+  }
+  // If no crossings possible, allow non-crossing placements near center (less ideal)
+  if(placements.length===0){
+    const mid = Math.floor(size/2);
+    for(let r=0;r<size;r++){
+      for(let c=0;c<size;c++){
+        if(canPlace(g, word, r, c, "across")) placements.push({r,c,dir:"across",score: -10 - dist(r,c,mid,mid)});
+        if(canPlace(g, word, r, c, "down")) placements.push({r,c,dir:"down",score: -10 - dist(r,c,mid,mid)});
+      }
+    }
+  }
+  placements.sort((a,b)=>b.score-a.score);
+  return placements;
+}
+
+function dist(r,c,rr,cc){ return Math.abs(r-rr)+Math.abs(c-cc); }
+
+function scorePlacement(g, word, r, c, dir){
+  // higher is better: count crossings + prefer compact near center
+  const size = g.length;
+  const mid = Math.floor(size/2);
+  const dr = dir==="down" ? 1 : 0;
+  const dc = dir==="across" ? 1 : 0;
+  let crosses = 0;
+  for(let i=0;i<word.length;i++){
+    const rr = r+dr*i, cc = c+dc*i;
+    if(g[rr][cc] === word[i]) crosses++;
+  }
+  const compact = -dist(r,c,mid,mid);
+  return crosses*5 + compact;
+}
+
+function trimGrid(g){
+  const size = g.length;
+  let minR=size, minC=size, maxR=-1, maxC=-1;
+  for(let r=0;r<size;r++){
+    for(let c=0;c<size;c++){
+      if(g[r][c]){
+        minR=Math.min(minR,r); minC=Math.min(minC,c);
+        maxR=Math.max(maxR,r); maxC=Math.max(maxC,c);
+      }
+    }
+  }
+  if(maxR<0) return g;
+
+  // add 1-cell padding border
+  minR = Math.max(0, minR-1); minC = Math.max(0, minC-1);
+  maxR = Math.min(size-1, maxR+1); maxC = Math.min(size-1, maxC+1);
+
+  const out = [];
+  for(let r=minR;r<=maxR;r++){
+    out.push(g[r].slice(minC, maxC+1));
+  }
+  return out;
+}
+
+function generateCrossword(entries, tries=80){
+  const words = entries
+    .map(e => ({...e, answer: e.answer.toUpperCase().replace(/[^A-Z]/g,"")}))
+    .filter(e => e.answer.length >= 3);
+
+  // longer first helps
+  words.sort((a,b)=>b.answer.length-a.answer.length);
+
+  let best = null;
+
+  for(let t=0;t<tries;t++){
+    const size = 25;
+    const g = makeGrid(size);
+    const placed = [];
+
+    // place first word centered, random direction
+    const first = words[0];
+    const dir0 = Math.random() < 0.5 ? "across" : "down";
+    const mid = Math.floor(size/2);
+    const r0 = dir0==="across" ? mid : mid - Math.floor(first.answer.length/2);
+    const c0 = dir0==="across" ? mid - Math.floor(first.answer.length/2) : mid;
+    if(!canPlace(g, first.answer, r0, c0, dir0)) continue;
+    placeWord(g, first.answer, r0, c0, dir0);
+    placed.push({entry:first, r:r0, c:c0, dir:dir0});
+
+    for(let i=1;i<words.length;i++){
+      const w = words[i];
+      const placements = findPossiblePlacements(g, placed, w.answer);
+      if(placements.length===0) continue;
+      // pick among top few to add variation
+      const pick = placements[Math.floor(Math.random()*Math.min(6, placements.length))];
+      placeWord(g, w.answer, pick.r, pick.c, pick.dir);
+      placed.push({entry:w, r:pick.r, c:pick.c, dir:pick.dir});
+    }
+
+    // score by how many placed + total crossings density
+    const placedCount = placed.length;
+    if(!best || placedCount > best.placed.length){
+      best = { grid: trimGrid(g), placed };
+      if(placedCount === words.length) break; // perfect
+    }
+  }
+
+  return best;
+}
+
+// ---- Rendering + gameplay ----
+let STATE = null;
+
+function build(){
+  const result = generateCrossword(ENTRIES, 120);
+  if(!result){
+    setStatus("Couldn’t generate a grid. Try Regenerate.");
+    return;
+  }
+
+  const grid = result.grid;
+  const rows = grid.length;
+  const cols = grid[0].length;
+
+  // Map filled cells
+  const isBlack = (r,c)=> grid[r][c] === null;
+
+  // numbering
+  const numbers = Array.from({length:rows}, ()=> Array.from({length:cols}, ()=> 0));
+  let num = 1;
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      if(isBlack(r,c)) continue;
+      const startsAcross = (c===0 || isBlack(r,c-1)) && (c+1<cols && !isBlack(r,c+1));
+      const startsDown   = (r===0 || isBlack(r-1,c)) && (r+1<rows && !isBlack(r+1,c));
+      if(startsAcross || startsDown){
+        numbers[r][c] = num++;
+      }
+    }
+  }
+
+  // Extract across/down clue list from generated grid by reading sequences,
+  // then match sequences to known entries by answer string.
+  const answerToClue = new Map(ENTRIES.map(e=>[e.answer, e.clue]));
+  const acrossList = [];
+  const downList = [];
+
+  // Across sequences
+  for(let r=0;r<rows;r++){
+    let c=0;
+    while(c<cols){
+      if(isBlack(r,c)){ c++; continue; }
+      const start = c;
+      while(c<cols && !isBlack(r,c)) c++;
+      const word = grid[r].slice(start,c).join("");
+      if(word.length>=3 && numbers[r][start]>0){
+        const clue = answerToClue.get(word) || "(no clue found for this entry)";
+        acrossList.push({ number: numbers[r][start], answer: word, clue, r, c:start, dir:"across" });
+      }
+    }
+  }
+
+  // Down sequences
+  for(let c=0;c<cols;c++){
+    let r=0;
+    while(r<rows){
+      if(isBlack(r,c)){ r++; continue; }
+      const start = r;
+      while(r<rows && !isBlack(r,c)) r++;
+      let word = "";
+      for(let rr=start; rr<r; rr++) word += grid[rr][c];
+      if(word.length>=3 && numbers[start][c]>0){
+        const clue = answerToClue.get(word) || "(no clue found for this entry)";
+        downList.push({ number: numbers[start][c], answer: word, clue, r:start, c, dir:"down" });
+      }
+    }
+  }
+
+  // Save state
+  STATE = {
+    solution: grid,
+    numbers,
+    rows, cols,
+    selected: { r:0, c:0, dir:"across" },
+    acrossList: acrossList.sort((a,b)=>a.number-b.number),
+    downList: downList.sort((a,b)=>a.number-b.number),
+  };
+
+  renderGrid();
+  renderClues();
+  setStatus(`Generated a grid with ${STATE.acrossList.length + STATE.downList.length} clues. (Regenerate if you want a different layout.)`);
+
+  // Select first non-black
+  outer: for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      if(STATE.solution[r][c]!==null){
+        selectCell(r,c,"across", true);
+        break outer;
+      }
+    }
+  }
+}
+
+function renderGrid(){
+  const { rows, cols, solution, numbers } = STATE;
+  const gridEl = document.getElementById("grid");
+  gridEl.style.gridTemplateColumns = `repeat(${cols}, var(--cell))`;
+  gridEl.innerHTML = "";
+
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const cellEl = document.createElement("div");
+      cellEl.className = "cell" + (solution[r][c]===null ? " black" : "");
+      cellEl.dataset.r = r;
+      cellEl.dataset.c = c;
+
+      if(solution[r][c]!==null){
+        if(numbers[r][c]){
+          const n = document.createElement("div");
+          n.className = "num";
+          n.textContent = numbers[r][c];
+          cellEl.appendChild(n);
+        }
+        const inp = document.createElement("input");
+        inp.className = "letter";
+        inp.maxLength = 1;
+        inp.autocomplete = "off";
+        inp.spellcheck = false;
+        inp.inputMode = "text";
+        inp.addEventListener("focus", ()=> selectCell(r,c,STATE.selected.dir, true));
+        inp.addEventListener("keydown", (e)=> onKey(e, r, c));
+        inp.addEventListener("input", ()=> {
+          inp.value = (inp.value || "").toUpperCase().replace(/[^A-Z]/g,"");
+          moveNext();
+          checkWin(false);
+        });
+        cellEl.appendChild(inp);
+
+        cellEl.addEventListener("click", ()=>{
+          // click same cell toggles direction
+          if(STATE.selected.r===r && STATE.selected.c===c){
+            const newDir = STATE.selected.dir === "across" ? "down" : "across";
+            selectCell(r,c,newDir,true);
+          } else {
+            selectCell(r,c,STATE.selected.dir,true);
+          }
+        });
+      }
+
+      gridEl.appendChild(cellEl);
+    }
+  }
+  highlightCurrentWord();
+}
+
+function renderClues(){
+  const acrossEl = document.getElementById("across");
+  const downEl = document.getElementById("down");
+  acrossEl.innerHTML = "";
+  downEl.innerHTML = "";
+
+  for(const item of STATE.acrossList){
+    const li = document.createElement("li");
+    li.innerHTML = `<strong>${item.number}.</strong> ${escapeHtml(item.clue)} <span class="answerLen">(${item.answer.length})</span>`;
+    li.style.cursor = "pointer";
+    li.addEventListener("click", ()=> selectCell(item.r, item.c, "across", true));
+    acrossEl.appendChild(li);
+  }
+  for(const item of STATE.downList){
+    const li = document.createElement("li");
+    li.innerHTML = `<strong>${item.number}.</strong> ${escapeHtml(item.clue)} <span class="answerLen">(${item.answer.length})</span>`;
+    li.style.cursor = "pointer";
+    li.addEventListener("click", ()=> selectCell(item.r, item.c, "down", true));
+    downEl.appendChild(li);
+  }
+}
+
+function escapeHtml(s){
+  return (s||"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function getCellEl(r,c){
+  return document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+}
+
+function selectCell(r,c,dir, focusInput=false){
+  STATE.selected = { r,c,dir };
+  document.querySelectorAll(".cell.selected").forEach(el=> el.classList.remove("selected"));
+  const el = getCellEl(r,c);
+  if(el) el.classList.add("selected");
+  if(focusInput && el){
+    const inp = el.querySelector("input.letter");
+    if(inp) inp.focus({preventScroll:true});
+  }
+  highlightCurrentWord();
+}
+
+function highlightCurrentWord(){
+  document.querySelectorAll(".cell.highlight").forEach(el=> el.classList.remove("highlight"));
+  const { r, c, dir } = STATE.selected;
+  const { solution, rows, cols } = STATE;
+  if(solution[r][c]===null) return;
+
+  // find start of word
+  let sr=r, sc=c;
+  if(dir==="across"){
+    while(sc>0 && solution[sr][sc-1]!==null) sc--;
+    let cc=sc;
+    while(cc<cols && solution[sr][cc]!==null){
+      getCellEl(sr,cc)?.classList.add("highlight");
+      cc++;
+    }
+  } else {
+    while(sr>0 && solution[sr-1][sc]!==null) sr--;
+    let rr=sr;
+    while(rr<rows && solution[rr][sc]!==null){
+      getCellEl(rr,sc)?.classList.add("highlight");
+      rr++;
+    }
+  }
+}
+
+function onKey(e, r, c){
+  const { solution } = STATE;
+  if(solution[r][c]===null) return;
+
+  const key = e.key;
+
+  if(key==="ArrowLeft"){ e.preventDefault(); move(r,c,"left"); }
+  else if(key==="ArrowRight"){ e.preventDefault(); move(r,c,"right"); }
+  else if(key==="ArrowUp"){ e.preventDefault(); move(r,c,"up"); }
+  else if(key==="ArrowDown"){ e.preventDefault(); move(r,c,"down"); }
+  else if(key==="Backspace"){
+    const inp = getCellEl(r,c).querySelector("input.letter");
+    if(inp && inp.value){
+      inp.value = "";
+    } else {
+      e.preventDefault();
+      movePrev();
+    }
+  } else if(key==="Enter"){
+    e.preventDefault();
+    const newDir = STATE.selected.dir === "across" ? "down" : "across";
+    selectCell(r,c,newDir,true);
+  }
+}
+
+function move(r,c,dir){
+  const { rows, cols, solution } = STATE;
+  let rr=r, cc=c;
+  const step = (d)=>{
+    if(d==="left") cc--;
+    if(d==="right") cc++;
+    if(d==="up") rr--;
+    if(d==="down") rr++;
+  };
+  step(dir);
+  while(rr>=0 && cc>=0 && rr<rows && cc<cols){
+    if(solution[rr][cc]!==null){
+      // update selected direction based on arrow move
+      const newDir = (dir==="left"||dir==="right") ? "across" : "down";
+      selectCell(rr,cc,newDir,true);
+      return;
+    }
+    step(dir);
+  }
+}
+
+function moveNext(){
+  const { r, c, dir } = STATE.selected;
+  const { rows, cols, solution } = STATE;
+  let rr=r, cc=c;
+  if(dir==="across") cc++;
+  else rr++;
+  while(rr>=0 && cc>=0 && rr<rows && cc<cols){
+    if(solution[rr][cc]!==null){
+      selectCell(rr,cc,dir,true);
+      return;
+    }
+    if(dir==="across") cc++;
+    else rr++;
+  }
+}
+
+function movePrev(){
+  const { r, c, dir } = STATE.selected;
+  const { rows, cols, solution } = STATE;
+  let rr=r, cc=c;
+  if(dir==="across") cc--;
+  else rr--;
+  while(rr>=0 && cc>=0 && rr<rows && cc<cols){
+    if(solution[rr][cc]!==null){
+      selectCell(rr,cc,dir,true);
+      return;
+    }
+    if(dir==="across") cc--;
+    else rr--;
+  }
+}
+
+function setStatus(msg){
+  document.getElementById("status").textContent = msg;
+}
+
+function check(markWrong=true){
+  const { rows, cols, solution } = STATE;
+  let wrong = 0, filled = 0, total = 0;
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      if(solution[r][c]===null) continue;
+      total++;
+      const el = getCellEl(r,c);
+      const inp = el.querySelector("input.letter");
+      const val = (inp.value || "").toUpperCase();
+      el.classList.remove("wrong","correct");
+      if(val) filled++;
+      if(val && val !== solution[r][c]){
+        wrong++;
+        if(markWrong) el.classList.add("wrong");
+      } else if(val && val === solution[r][c]){
+        el.classList.add("correct");
+      }
+    }
+  }
+  if(wrong===0 && filled===total){
+    setStatus("Perfect! ✅");
+    showModal();
+  } else {
+    setStatus(`Filled ${filled}/${total}. Wrong squares: ${wrong}.`);
+  }
+}
+
+function clearAll(){
+  document.querySelectorAll("input.letter").forEach(i=> i.value="");
+  document.querySelectorAll(".cell.wrong,.cell.correct").forEach(el=> el.classList.remove("wrong","correct"));
+  setStatus("Cleared.");
+}
+
+function hint(){
+  const { rows, cols, solution } = STATE;
+  const candidates = [];
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      if(solution[r][c]===null) continue;
+      const el = getCellEl(r,c);
+      const inp = el.querySelector("input.letter");
+      const val = (inp.value || "").toUpperCase();
+      if(val !== solution[r][c]) candidates.push([r,c]);
+    }
+  }
+  if(candidates.length===0){
+    setStatus("No hint needed — everything is correct so far.");
+    return;
+  }
+  const [r,c] = candidates[Math.floor(Math.random()*candidates.length)];
+  const el = getCellEl(r,c);
+  const inp = el.querySelector("input.letter");
+  inp.value = solution[r][c];
+  el.classList.remove("wrong");
+  el.classList.add("correct");
+  selectCell(r,c,STATE.selected.dir,true);
+  checkWin(false);
+  setStatus("Hint used: revealed one letter ✨");
+}
+
+function checkWin(show=true){
+  const { rows, cols, solution } = STATE;
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      if(solution[r][c]===null) continue;
+      const inp = getCellEl(r,c).querySelector("input.letter");
+      if(((inp.value||"").toUpperCase()) !== solution[r][c]) return false;
+    }
+  }
+  if(show) showModal();
+  return true;
+}
+
+// ---- Modal / Valentine reveal ----
+function showModal(){
+  const b = document.getElementById("modalBackdrop");
+  b.style.display = "flex";
+}
+function closeModal(){
+  const b = document.getElementById("modalBackdrop");
+  b.style.display = "none";
+}
+
+document.getElementById("hintBtn").addEventListener("click", hint);
+document.getElementById("checkBtn").addEventListener("click", ()=>check(true));
+document.getElementById("clearBtn").addEventListener("click", clearAll);
+document.getElementById("newBtn").addEventListener("click", ()=>{ closeModal(); build(); });
+
+document.getElementById("closeBtn").addEventListener("click", closeModal);
+document.getElementById("modalBackdrop").addEventListener("click", (e)=>{ if(e.target.id==="modalBackdrop") closeModal(); });
+
+document.getElementById("yesBtn").addEventListener("click", ()=>{
+  document.getElementById("modalTitle").textContent = "YAY 💘";
+  document.getElementById("modalText").textContent = "Happy Valentine’s — I choose you, always. 🥹❤️";
+});
+
+build();
+</script>
+</body>
+</html>
