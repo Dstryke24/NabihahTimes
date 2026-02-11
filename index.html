@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Mini Valentine Crossword</title>
+  <title>The Taawun Times Mini Crossword</title>
   <style>
     :root { --cell: 42px; --gap: 2px; }
 
@@ -17,7 +17,7 @@
 
     header { padding: 18px 16px 10px; max-width: 1100px; margin: 0 auto; }
     h1 { margin: 0; font-size: 20px; letter-spacing: .2px; }
-    .sub { margin-top: 6px; color:#444; font-size: 13px; line-height: 1.35; }
+    .sub { margin-top: 8px; color:#444; font-size: 13px; line-height: 1.45; }
     .footerNote { font-size: 12px; color:#666; margin-top: 10px; }
 
     .wrap {
@@ -29,7 +29,6 @@
       padding: 0 16px 18px;
       align-items: start;
     }
-
     @media (max-width: 980px){
       .wrap{ grid-template-columns: 1fr; gap: 12px; }
     }
@@ -43,7 +42,7 @@
     .gridCard { padding: 14px; }
     .cluesCard { padding: 14px; }
 
-    /* Current clue bar (helps mobile a LOT) */
+    /* Current clue bar */
     .clueBar {
       display:flex;
       gap: 10px;
@@ -68,7 +67,6 @@
     }
 
     .gridWrap {
-      /* makes grid scrollable if needed, but we will size it to fit on mobile */
       overflow: auto;
       -webkit-overflow-scrolling: touch;
       border-radius: 12px;
@@ -100,12 +98,13 @@
       pointer-events:none;
     }
 
+    /* >=16px prevents iOS zoom */
     input.letter {
       width: 100%; height: 100%;
       border: 0; outline: none;
       text-transform: uppercase;
       text-align: center;
-      font-size: 18px;           /* >=16 prevents iOS auto zoom */
+      font-size: 18px;
       font-weight: 800;
       background: transparent;
       caret-color: transparent;
@@ -126,6 +125,8 @@
     button.primary{ background:#111; color:#fff; border-color:#111; }
     button.primary:hover{ background:#222; }
     button.danger{ border-color:#f0c3c3; }
+    button.success{ background:#16a34a; border-color:#16a34a; color:#fff; }
+    button.success:hover{ background:#15803d; }
     .status { margin-top: 10px; font-size: 13px; color:#333; }
 
     /* Clues */
@@ -149,41 +150,64 @@
     li span.answerLen { color:#777; font-weight:700; margin-left: 6px; font-size: 12px; }
 
     /* Mobile clue tabs */
-    .tabs {
-      display: none;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
+    .tabs { display: none; gap: 8px; margin-bottom: 10px; }
     .tabBtn { flex: 1; }
     .tabBtn.active { background:#111; border-color:#111; color:#fff; }
 
     @media (max-width: 980px){
-      /* on mobile: clues become tabs, not two columns */
       .clueCols { grid-template-columns: 1fr; }
       .tabs { display: flex; }
       .clueCols > div { display: none; }
       .clueCols > div.activePanel { display: block; }
-      .clueBar .text { white-space: normal; overflow: visible; text-overflow: clip; } /* show full clue on mobile */
+      .clueBar .text { white-space: normal; overflow: visible; text-overflow: clip; }
     }
 
     /* Modal */
     .modalBackdrop {
       position: fixed; inset: 0; background: rgba(0,0,0,.55);
       display:none; align-items: center; justify-content: center; padding: 18px;
+      z-index: 999;
     }
-    .modal { max-width: 520px; width: 100%; padding: 18px; border-radius: 16px; background:#fff; border:1px solid #eee; }
-    .modal h3 { margin: 0 0 6px; font-size: 18px; }
-    .modal p { margin: 0 0 12px; color:#333; line-height: 1.35; }
-    .modal .row { display:flex; gap: 10px; flex-wrap: wrap; }
-    .pillSmall { display:inline-block; padding: 3px 8px; border-radius: 999px; font-size: 12px; border: 1px solid #e6e6e6; color:#444; background:#fafafa; }
+    .modal {
+      max-width: 560px; width: 100%;
+      padding: 18px;
+      border-radius: 16px;
+      background:#fff;
+      border:1px solid #eee;
+      text-align: center;
+    }
+    .tick {
+      width: 74px; height: 74px;
+      border-radius: 999px;
+      background: #16a34a;
+      display: grid;
+      place-items: center;
+      margin: 4px auto 12px;
+      box-shadow: 0 10px 26px rgba(22,163,74,.25);
+    }
+    .tick svg { width: 42px; height: 42px; }
+    .modal h3 { margin: 0 0 6px; font-size: 20px; }
+    .modal p { margin: 0 0 14px; color:#333; line-height: 1.45; }
+    .modal .row { display:flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    .questionBox {
+      margin-top: 12px;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid #eee;
+      background: #fcfcfc;
+      display:none;
+      font-size: 16px;
+      font-weight: 800;
+      line-height: 1.3;
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>Mini Valentine Crossword</h1>
+    <h1>The Taawun Times Mini Crossword</h1>
     <div class="sub">
-      Solve the crossword. When you finish… there’s a question waiting. 💌
-      <div class="footerNote">Tip: tap a square, type letters. Use arrows / backspace. Tap same square again to switch Across/Down.</div>
+      Solve the crossword. There are so many things I want to ask you but never get to it. I thought, with the 6 month anniversary of ours approaching soon, there is one question that I can ask. Anyways, I'm getting ahead of myself. Let's start with remembering our 6 months with each other
+      <div class="footerNote">Tip: tap a square, type letters. Use arrows / backspace. Tap the same square again to switch Across/Down.</div>
     </div>
   </header>
 
@@ -227,15 +251,21 @@
     </aside>
   </main>
 
+  <!-- SOLVED MODAL -->
   <div id="modalBackdrop" class="modalBackdrop" role="dialog" aria-modal="true">
     <div class="modal">
-      <div class="pillSmall">Solved ✅</div>
-      <h3 id="modalTitle">Will you be my Valentine?</h3>
-      <p id="modalText">I made this from our clues, our memories, and (a little) code. 💗</p>
+      <div class="tick" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M20 6L9 17l-5-5" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h3>Congratulations</h3>
+      <p>You solved the puzzle.</p>
       <div class="row">
-        <button id="yesBtn" class="primary">Yes 💘</button>
+        <button id="revealBtn" class="success">Reveal the question</button>
         <button id="closeBtn">Close</button>
       </div>
+      <div id="questionBox" class="questionBox">Would you do me the honour of being my Valentine?</div>
     </div>
   </div>
 
@@ -312,7 +342,6 @@ function setTab(dir){
 }
 
 function updateCellSize(){
-  // Desktop keeps ~42. Mobile computes cell size so grid fits nicely.
   const cols = STATE?.cols ?? FIXED_GRID[0].length;
   const gap = 2;
 
@@ -321,12 +350,12 @@ function updateCellSize(){
     return;
   }
 
-  const sidePadding = 16 * 2;   // page padding
-  const cardPadding = 14 * 2;   // gridCard padding
+  const sidePadding = 16 * 2;
+  const cardPadding = 14 * 2;
   const available = Math.max(280, Math.min(window.innerWidth - sidePadding - cardPadding, 620));
   const cell = Math.floor((available - (cols + 1) * gap) / cols);
-
   const clamped = Math.max(28, Math.min(cell, 46));
+
   document.documentElement.style.setProperty("--cell", clamped + "px");
 }
 
@@ -336,7 +365,6 @@ function buildFromFixed(){
   const cols = grid[0].length;
   const isBlack = (r,c)=> grid[r][c] === null;
 
-  // numbering like NYT
   const numbers = Array.from({length:rows}, ()=> Array.from({length:cols}, ()=> 0));
   let num = 1;
   for(let r=0;r<rows;r++){
@@ -351,7 +379,6 @@ function buildFromFixed(){
   const acrossList = [];
   const downList = [];
 
-  // Across
   for(let r=0;r<rows;r++){
     let c=0;
     while(c<cols){
@@ -365,7 +392,6 @@ function buildFromFixed(){
     }
   }
 
-  // Down
   for(let c=0;c<cols;c++){
     let r=0;
     while(r<rows){
@@ -394,7 +420,6 @@ function buildFromFixed(){
   renderClues();
   setStatus("Ready. 💌");
 
-  // first non-black
   outer: for(let r=0;r<rows;r++){
     for(let c=0;c<cols;c++){
       if(STATE.solution[r][c]!==null){
@@ -509,7 +534,6 @@ function updateClueBar(){
   const target = listEl.querySelector(`li[data-dir="${dir}"][data-number="${num}"]`);
 
   if(target){
-    // remove the number/length from clue bar: show just the clue text
     const clueText = target.textContent.replace(/^\s*\d+\.\s*/, "").replace(/\(\d+\)\s*$/, "").trim();
     document.getElementById("currentClue").textContent = clueText;
   } else {
@@ -532,9 +556,7 @@ function updateActiveClue(){
     target.scrollIntoView({ block: "nearest" });
   }
 
-  // On mobile, automatically switch to the right clue tab
   if(isMobile()) setTab(dir);
-
   updateClueBar();
 }
 
@@ -683,7 +705,7 @@ function check(markWrong=true){
 
   if(wrong===0 && filled===total){
     setStatus("Perfect! ✅");
-    showModal();
+    showSolvedModal();
   } else {
     setStatus(`Filled ${filled}/${total}. Wrong squares: ${wrong}.`);
   }
@@ -704,13 +726,18 @@ function checkWin(show=true){
       if(((inp.value||"").toUpperCase()) !== solution[r][c]) return false;
     }
   }
-  if(show) showModal();
+  if(show) showSolvedModal();
   return true;
 }
 
-// Modal
-function showModal(){ document.getElementById("modalBackdrop").style.display = "flex"; }
-function closeModal(){ document.getElementById("modalBackdrop").style.display = "none"; }
+/* Solved modal */
+function showSolvedModal(){
+  document.getElementById("questionBox").style.display = "none";
+  document.getElementById("modalBackdrop").style.display = "flex";
+}
+function closeModal(){
+  document.getElementById("modalBackdrop").style.display = "none";
+}
 
 document.getElementById("checkBtn").addEventListener("click", ()=>check(true));
 document.getElementById("clearBtn").addEventListener("click", clearAll);
@@ -718,18 +745,14 @@ document.getElementById("clearBtn").addEventListener("click", clearAll);
 document.getElementById("acrossTab").addEventListener("click", ()=> setTab("across"));
 document.getElementById("downTab").addEventListener("click", ()=> setTab("down"));
 
+document.getElementById("revealBtn").addEventListener("click", ()=>{
+  document.getElementById("questionBox").style.display = "block";
+});
+
 document.getElementById("closeBtn").addEventListener("click", closeModal);
 document.getElementById("modalBackdrop").addEventListener("click", (e)=>{ if(e.target.id==="modalBackdrop") closeModal(); });
 
-document.getElementById("yesBtn").addEventListener("click", ()=>{
-  document.getElementById("modalTitle").textContent = "YAY 💘";
-  document.getElementById("modalText").textContent = "Happy Valentine’s — I choose you, always. 🥹❤️";
-});
-
-// Recompute cell size on rotate/resize
-window.addEventListener("resize", ()=>{
-  updateCellSize();
-});
+window.addEventListener("resize", ()=>{ updateCellSize(); });
 
 // Start
 buildFromFixed();
