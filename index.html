@@ -348,7 +348,7 @@ h1 { margin: 0; font-size: 26px; letter-spacing: .2px; }
       <!-- simple maroon heart -->
       <svg viewBox="0 0 24 24">
         <path d="M12 21s-7-4.5-9.5-9C.5 8.5 2.5 6 5.5 6c1.7 0 3.2.9 4 2.2C10.3 6.9 11.8 6 13.5 6c3 0 5 2.5 3 6-2.5 4.5-9.5 9-9.5 9Z"
-              fill="#800020"/>
+              fill="#5a0016"/>
       </svg>
     </div>
 
@@ -501,6 +501,7 @@ function buildFromFixed(){
   }
 
   STATE = {
+    solved: false,
     solution: grid,
     numbers,
     rows, cols,
@@ -849,9 +850,9 @@ function checkWin(show=true){
 
 /* Solved modal */
 function showSolvedModal(){
-  document.getElementById("questionBox").style.display = "none";
   document.getElementById("modalBackdrop").style.display = "flex";
 }
+
 function closeModal(){
   document.getElementById("modalBackdrop").style.display = "none";
 }
@@ -890,6 +891,7 @@ buildFromFixed();
 </script>
 </body>
 </html>
+
 
 
 
