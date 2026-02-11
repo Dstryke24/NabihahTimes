@@ -69,8 +69,14 @@
     .clueCols { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     @media (max-width: 980px){ .clueCols{ grid-template-columns: 1fr; } }
     h2 { font-size: 14px; margin: 0 0 8px; letter-spacing:.2px; }
-    ol { margin: 0; padding-left: 18px; }
-    li { margin: 6px 0; font-size: 13px; color:#222; line-height: 1.25; }
+
+    /* IMPORTANT CHANGE:
+       Use UL so the browser does NOT add its own "1. 2. 3." numbering.
+       This removes the FIRST "1." you were seeing. */
+    ul { margin: 0; padding-left: 18px; }
+
+    li { margin: 6px 0; font-size: 13px; color:#222; line-height: 1.25; cursor: pointer; }
+    li:hover { background:#f7f7f7; border-radius: 10px; padding: 6px 8px; margin-left: -8px; margin-right: -8px; }
     li span.answerLen { color:#777; font-weight:600; margin-left: 6px; font-size: 12px; }
 
     .modalBackdrop {
@@ -110,11 +116,13 @@
       <div class="clueCols">
         <div>
           <h2>Across</h2>
-          <ol id="across"></ol>
+          <!-- CHANGED: ol -> ul -->
+          <ul id="across"></ul>
         </div>
         <div>
           <h2>Down</h2>
-          <ol id="down"></ol>
+          <!-- CHANGED: ol -> ul -->
+          <ul id="down"></ul>
         </div>
       </div>
     </aside>
@@ -141,22 +149,22 @@
 const ENTRIES = [
   { answer: "KHALJI", clue: "He is big, he is powerful, sometimes causes delays and for some reason intimidates your brother." },
   { answer: "LETSGO", clue: "Not quite on a knee, but an invite to forever." },
-  { answer: "PANDORA", clue: "A gift from my travel, never adorned." },
-  { answer: "LAPELPIN", clue: "Safi stands with UAE." },
-  { answer: "VEIL", clue: "A part of your shaadi garment, I never got to see." },
+  { answer: "PANDORA", clue: "A gift from my travel, never adorned" },
+  { answer: "LAPELPIN", clue: "Safi stands with UAE" },
+  { answer: "VEIL", clue: "A part of your shaadi garment, I never got to see" },
   { answer: "LOCHNESS", clue: "Drenched pants, cold fingers and 3 rainbows later, never found." },
-  { answer: "LIZ", clue: "Cat lady gardner of Oxfordshire." },
-  { answer: "CLYDE", clue: "Moody's furry scottish brother." },
-  { answer: "MATCHA", clue: "A green slap to the face I only tolerate during the day." },
-  { answer: "ZAM", clue: "Your local comfort food joint." },
-  { answer: "NONE", clue: "My favourite cheesecake topping." },
-  { answer: "SHEIN", clue: "The order never placed." },
+  { answer: "LIZ", clue: "Cat lady gardner of Oxfordshire" },
+  { answer: "CLYDE", clue: "Moody's furry scottish brother" },
+  { answer: "MATCHA", clue: "A green slap to the face I only tolerate during the day" },
+  { answer: "ZAM", clue: "Your local comfort food joint" },
+  { answer: "NONE", clue: "My favourite cheesecake topping" },
+  { answer: "SHEIN", clue: "The order never placed" },
   { answer: "ITTA", clue: "How much do you love me?" },
   { answer: "IMAD", clue: "The legend. The greatest. The hottest. The man that makes all men want to be him." },
-  { answer: "NBH", clue: 'The "sweet" man of Malaz.' },
-  { answer: "STORR", clue: "The old man that made you cry." },
+  { answer: "NBH", clue: 'The "sweet" man of Malaz' },
+  { answer: "STORR", clue: "The old man that made you cry" },
   { answer: "PHOTOS", clue: "We will get to it someday..." },
-  { answer: "FOYER", clue: "Our next home improvement project (Inshallah)." },
+  { answer: "FOYER", clue: "Our next home improvement project (Inshallah)" },
 ];
 
 // ---- Crossword layout generator (greedy with retries) ----
@@ -168,34 +176,28 @@ function inBounds(g, r, c){ return r>=0 && c>=0 && r<g.length && c<g.length; }
 function cell(g,r,c){ return inBounds(g,r,c) ? g[r][c] : undefined; }
 
 function canPlace(g, word, r, c, dir){
-  // dir: "across" or "down"
   const dr = dir==="down" ? 1 : 0;
   const dc = dir==="across" ? 1 : 0;
 
-  // must be in bounds
   const endR = r + dr*(word.length-1);
   const endC = c + dc*(word.length-1);
   if(!inBounds(g, r, c) || !inBounds(g, endR, endC)) return false;
 
-  // boundary cells before and after must be empty (classic crossword rule)
   const before = cell(g, r - dr, c - dc);
   const after  = cell(g, endR + dr, endC + dc);
   if(before !== null && before !== undefined) return false;
   if(after  !== null && after  !== undefined) return false;
 
-  // each letter must match or be empty; adjacent perpendicular cells must be empty unless crossing
   for(let i=0;i<word.length;i++){
     const rr = r + dr*i;
     const cc = c + dc*i;
     const existing = g[rr][cc];
     if(existing !== null && existing !== word[i]) return false;
 
-    // perpendicular adjacency checks
     if(dir==="across"){
       const up = cell(g, rr-1, cc);
       const dn = cell(g, rr+1, cc);
       const isCrossing = existing === word[i];
-      // if not crossing, up/down should be empty
       if(!isCrossing){
         if(up !== null && up !== undefined) return false;
         if(dn !== null && dn !== undefined) return false;
@@ -221,12 +223,10 @@ function placeWord(g, word, r, c, dir){
   }
 }
 
-function findPossiblePlacements(g, placed, word){
-  // Try to cross each letter with existing letters in grid
+function findPossiblePlacements(g, word){
   const placements = [];
   const size = g.length;
 
-  // Collect all coordinates for each letter in grid
   const coordsByLetter = new Map();
   for(let r=0;r<size;r++){
     for(let c=0;c<size;c++){
@@ -243,18 +243,15 @@ function findPossiblePlacements(g, placed, word){
     const coords = coordsByLetter.get(ch);
     if(!coords) continue;
     for(const [r,c] of coords){
-      // If we cross at (r,c), compute start positions
-      // across: start at col = c - i
       const ra = r;
       const ca = c - i;
       if(canPlace(g, word, ra, ca, "across")) placements.push({r:ra,c:ca,dir:"across",score:scorePlacement(g, word, ra, ca, "across")});
-      // down: start at row = r - i
       const rd = r - i;
       const cd = c;
       if(canPlace(g, word, rd, cd, "down")) placements.push({r:rd,c:cd,dir:"down",score:scorePlacement(g, word, rd, cd, "down")});
     }
   }
-  // If no crossings possible, allow non-crossing placements near center (less ideal)
+
   if(placements.length===0){
     const mid = Math.floor(size/2);
     for(let r=0;r<size;r++){
@@ -271,7 +268,6 @@ function findPossiblePlacements(g, placed, word){
 function dist(r,c,rr,cc){ return Math.abs(r-rr)+Math.abs(c-cc); }
 
 function scorePlacement(g, word, r, c, dir){
-  // higher is better: count crossings + prefer compact near center
   const size = g.length;
   const mid = Math.floor(size/2);
   const dr = dir==="down" ? 1 : 0;
@@ -298,7 +294,6 @@ function trimGrid(g){
   }
   if(maxR<0) return g;
 
-  // add 1-cell padding border
   minR = Math.max(0, minR-1); minC = Math.max(0, minC-1);
   maxR = Math.min(size-1, maxR+1); maxC = Math.min(size-1, maxC+1);
 
@@ -314,7 +309,6 @@ function generateCrossword(entries, tries=80){
     .map(e => ({...e, answer: e.answer.toUpperCase().replace(/[^A-Z]/g,"")}))
     .filter(e => e.answer.length >= 3);
 
-  // longer first helps
   words.sort((a,b)=>b.answer.length-a.answer.length);
 
   let best = null;
@@ -324,7 +318,6 @@ function generateCrossword(entries, tries=80){
     const g = makeGrid(size);
     const placed = [];
 
-    // place first word centered, random direction
     const first = words[0];
     const dir0 = Math.random() < 0.5 ? "across" : "down";
     const mid = Math.floor(size/2);
@@ -336,19 +329,17 @@ function generateCrossword(entries, tries=80){
 
     for(let i=1;i<words.length;i++){
       const w = words[i];
-      const placements = findPossiblePlacements(g, placed, w.answer);
+      const placements = findPossiblePlacements(g, w.answer);
       if(placements.length===0) continue;
-      // pick among top few to add variation
       const pick = placements[Math.floor(Math.random()*Math.min(6, placements.length))];
       placeWord(g, w.answer, pick.r, pick.c, pick.dir);
       placed.push({entry:w, r:pick.r, c:pick.c, dir:pick.dir});
     }
 
-    // score by how many placed + total crossings density
     const placedCount = placed.length;
     if(!best || placedCount > best.placed.length){
       best = { grid: trimGrid(g), placed };
-      if(placedCount === words.length) break; // perfect
+      if(placedCount === words.length) break;
     }
   }
 
@@ -369,10 +360,8 @@ function build(){
   const rows = grid.length;
   const cols = grid[0].length;
 
-  // Map filled cells
   const isBlack = (r,c)=> grid[r][c] === null;
 
-  // numbering
   const numbers = Array.from({length:rows}, ()=> Array.from({length:cols}, ()=> 0));
   let num = 1;
   for(let r=0;r<rows;r++){
@@ -386,13 +375,10 @@ function build(){
     }
   }
 
-  // Extract across/down clue list from generated grid by reading sequences,
-  // then match sequences to known entries by answer string.
   const answerToClue = new Map(ENTRIES.map(e=>[e.answer, e.clue]));
   const acrossList = [];
   const downList = [];
 
-  // Across sequences
   for(let r=0;r<rows;r++){
     let c=0;
     while(c<cols){
@@ -407,7 +393,6 @@ function build(){
     }
   }
 
-  // Down sequences
   for(let c=0;c<cols;c++){
     let r=0;
     while(r<rows){
@@ -423,7 +408,6 @@ function build(){
     }
   }
 
-  // Save state
   STATE = {
     solution: grid,
     numbers,
@@ -437,7 +421,6 @@ function build(){
   renderClues();
   setStatus(`Generated a grid with ${STATE.acrossList.length + STATE.downList.length} clues. (Regenerate if you want a different layout.)`);
 
-  // Select first non-black
   outer: for(let r=0;r<rows;r++){
     for(let c=0;c<cols;c++){
       if(STATE.solution[r][c]!==null){
@@ -484,7 +467,6 @@ function renderGrid(){
         cellEl.appendChild(inp);
 
         cellEl.addEventListener("click", ()=>{
-          // click same cell toggles direction
           if(STATE.selected.r===r && STATE.selected.c===c){
             const newDir = STATE.selected.dir === "across" ? "down" : "across";
             selectCell(r,c,newDir,true);
@@ -509,14 +491,12 @@ function renderClues(){
   for(const item of STATE.acrossList){
     const li = document.createElement("li");
     li.innerHTML = `<strong>${item.number}.</strong> ${escapeHtml(item.clue)} <span class="answerLen">(${item.answer.length})</span>`;
-    li.style.cursor = "pointer";
     li.addEventListener("click", ()=> selectCell(item.r, item.c, "across", true));
     acrossEl.appendChild(li);
   }
   for(const item of STATE.downList){
     const li = document.createElement("li");
     li.innerHTML = `<strong>${item.number}.</strong> ${escapeHtml(item.clue)} <span class="answerLen">(${item.answer.length})</span>`;
-    li.style.cursor = "pointer";
     li.addEventListener("click", ()=> selectCell(item.r, item.c, "down", true));
     downEl.appendChild(li);
   }
@@ -548,7 +528,6 @@ function highlightCurrentWord(){
   const { solution, rows, cols } = STATE;
   if(solution[r][c]===null) return;
 
-  // find start of word
   let sr=r, sc=c;
   if(dir==="across"){
     while(sc>0 && solution[sr][sc-1]!==null) sc--;
@@ -604,7 +583,6 @@ function move(r,c,dir){
   step(dir);
   while(rr>=0 && cc>=0 && rr<rows && cc<cols){
     if(solution[rr][cc]!==null){
-      // update selected direction based on arrow move
       const newDir = (dir==="left"||dir==="right") ? "across" : "down";
       selectCell(rr,cc,newDir,true);
       return;
@@ -723,14 +701,11 @@ function checkWin(show=true){
   return true;
 }
 
-// ---- Modal / Valentine reveal ----
 function showModal(){
-  const b = document.getElementById("modalBackdrop");
-  b.style.display = "flex";
+  document.getElementById("modalBackdrop").style.display = "flex";
 }
 function closeModal(){
-  const b = document.getElementById("modalBackdrop");
-  b.style.display = "none";
+  document.getElementById("modalBackdrop").style.display = "none";
 }
 
 document.getElementById("hintBtn").addEventListener("click", hint);
