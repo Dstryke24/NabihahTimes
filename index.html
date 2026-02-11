@@ -714,6 +714,7 @@ function check(markWrong=true){
 function clearAll(){
   document.querySelectorAll("input.letter").forEach(i=> i.value="");
   document.querySelectorAll(".cell.wrong,.cell.correct").forEach(el=> el.classList.remove("wrong","correct"));
+   STATE.solved = false;
   setStatus("Cleared.");
 }
 
@@ -759,3 +760,4 @@ buildFromFixed();
 </script>
 </body>
 </html>
+
