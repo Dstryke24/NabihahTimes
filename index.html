@@ -652,18 +652,32 @@ function move(r,c,dir){
 function moveNext(){
   const { r, c, dir } = STATE.selected;
   const { rows, cols, solution } = STATE;
-  let rr=r, cc=c;
+
+  let rr = r, cc = c;
+
+  // start from the NEXT cell
   if(dir==="across") cc++;
   else rr++;
+
+  // move forward until we find an EMPTY square in the same word
   while(rr>=0 && cc>=0 && rr<rows && cc<cols){
-    if(solution[rr][cc]!==null){
+    if(solution[rr][cc]===null) return; // end of word
+
+    const inp = getCellEl(rr,cc)?.querySelector("input.letter");
+    const val = (inp?.value || "").toUpperCase();
+
+    // if empty, go here
+    if(!val){
       selectCell(rr,cc,dir,true);
       return;
     }
+
+    // if filled, skip and keep going
     if(dir==="across") cc++;
     else rr++;
   }
 }
+
 
 function movePrev(){
   const { r, c, dir } = STATE.selected;
@@ -768,5 +782,6 @@ buildFromFixed();
 </script>
 </body>
 </html>
+
 
 
